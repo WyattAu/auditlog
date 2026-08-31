@@ -1,4 +1,4 @@
-# auditlog
+# tamper-audit
 
 Tamper-evident audit logging for Rust — SHA-256 chain, immutable entries, and queryable audit trail.
 
