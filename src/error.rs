@@ -7,7 +7,12 @@ pub enum AuditError {
 
     /// The audit chain is broken.
     #[error("Chain broken at entry {index}: {reason}")]
-    ChainBroken { index: usize, reason: String },
+    ChainBroken {
+        /// Index of the broken entry.
+        index: usize,
+        /// Reason for the break.
+        reason: String,
+    },
 
     /// The requested entry was not found.
     #[error("Entry not found: {0}")]

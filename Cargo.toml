@@ -25,6 +25,7 @@ name = "auditlog_bench"
 harness = false
 
 [dev-dependencies]
+proptest = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [features]

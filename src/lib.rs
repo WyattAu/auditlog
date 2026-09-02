@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 //! Tamper-evident audit logging for Rust.
 //!
 //! `auditlog` provides an immutable, SHA-256 chained audit log with
@@ -23,10 +24,15 @@
 //! assert_eq!(alice_entries.len(), 1);
 //! ```
 
+/// Audit log entry types.
 pub mod entry;
+/// Error types.
 pub mod error;
+/// Audit log implementation.
 pub mod log;
+/// Query types for audit logs.
 pub mod query;
+/// Chain verification.
 pub mod verify;
 
 pub use entry::AuditEntry;

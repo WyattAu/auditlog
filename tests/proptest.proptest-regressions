@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 03455ef9f8ad16b3b73ef1cdb43f90492b7c75555acc6c86e2249ee4d1cbbef0 # shrinks to actor = "a", action = "a", resource = "a", new_action = "b"
