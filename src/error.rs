@@ -4,23 +4,9 @@ pub enum AuditError {
     /// A serialization error occurred.
     #[error("Serialization error: {0}")]
     Serialization(String),
-
-    /// The audit chain is broken.
-    #[error("Chain broken at entry {index}: {reason}")]
-    ChainBroken {
-        /// Index of the broken entry.
-        index: usize,
-        /// Reason for the break.
-        reason: String,
-    },
-
-    /// The requested entry was not found.
-    #[error("Entry not found: {0}")]
-    EntryNotFound(String),
-
-    /// An I/O error occurred.
-    #[error("I/O error: {0}")]
-    Io(String),
+    /// A persistence error occurred.
+    #[error("Persistence error: {0}")]
+    Persistence(String),
 }
 
 /// A convenience result type for audit log operations.

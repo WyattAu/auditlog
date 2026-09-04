@@ -19,6 +19,8 @@ serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 thiserror = "2"
+async-trait = "0.1"
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json"], optional = true }
 
 [[bench]]
 name = "auditlog_bench"
@@ -27,8 +29,9 @@ harness = false
 [dev-dependencies]
 proptest = "1"
 criterion = { version = "0.5", features = ["html_reports"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "test-util"] }
 
 [features]
 default = ["in-memory"]
 in-memory = []
-persistence = []
+persistence = ["dep:sqlx"]

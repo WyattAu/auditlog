@@ -108,7 +108,13 @@ mod tests {
     use super::*;
 
     fn genesis_entry() -> AuditEntry {
-        AuditEntry::new("system", "start", "system", serde_json::json!({}), &"0".repeat(64))
+        AuditEntry::new(
+            "system",
+            "start",
+            "system",
+            serde_json::json!({}),
+            &"0".repeat(64),
+        )
     }
 
     fn chained_entry(prev: &AuditEntry, actor: &str, action: &str) -> AuditEntry {
@@ -153,7 +159,13 @@ mod tests {
         let e2 = chained_entry(&e1, "alice", "create");
 
         // Create an entry that claims to follow e1 but with wrong previous_hash
-        let mut e3 = AuditEntry::new("bob", "update", "resource", serde_json::json!({}), &"0".repeat(64));
+        let mut e3 = AuditEntry::new(
+            "bob",
+            "update",
+            "resource",
+            serde_json::json!({}),
+            &"0".repeat(64),
+        );
         e3.previous_hash = "wrong_hash".to_string();
         e3.hash = e3.compute_hash();
 

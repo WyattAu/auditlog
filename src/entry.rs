@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 /// A single immutable audit log entry.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "persistence", derive(sqlx::FromRow))]
 pub struct AuditEntry {
     /// Unique identifier for this entry.
     pub id: Uuid,
@@ -97,7 +98,13 @@ mod tests {
     #[test]
     fn test_genesis_entry() {
         let genesis_hash = "0".repeat(64);
-        let entry = AuditEntry::new("admin", "system.start", "system", serde_json::json!({}), &genesis_hash);
+        let entry = AuditEntry::new(
+            "admin",
+            "system.start",
+            "system",
+            serde_json::json!({}),
+            &genesis_hash,
+        );
 
         assert!(!entry.id.is_nil());
         assert!(entry.verify_hash());
@@ -107,9 +114,21 @@ mod tests {
     #[test]
     fn test_chained_entry() {
         let genesis_hash = "0".repeat(64);
-        let entry1 = AuditEntry::new("admin", "create", "user/1", serde_json::json!({}), &genesis_hash);
+        let entry1 = AuditEntry::new(
+            "admin",
+            "create",
+            "user/1",
+            serde_json::json!({}),
+            &genesis_hash,
+        );
 
-        let entry2 = AuditEntry::new("admin", "update", "user/1", serde_json::json!({"name": "Alice"}), &entry1.hash);
+        let entry2 = AuditEntry::new(
+            "admin",
+            "update",
+            "user/1",
+            serde_json::json!({"name": "Alice"}),
+            &entry1.hash,
+        );
 
         assert!(entry1.verify_hash());
         assert!(entry2.verify_hash());
@@ -120,7 +139,13 @@ mod tests {
     #[test]
     fn test_hash_detection() {
         let genesis_hash = "0".repeat(64);
-        let mut entry = AuditEntry::new("admin", "create", "user/1", serde_json::json!({}), &genesis_hash);
+        let mut entry = AuditEntry::new(
+            "admin",
+            "create",
+            "user/1",
+            serde_json::json!({}),
+            &genesis_hash,
+        );
 
         // Tamper with the entry
         entry.action = "delete".to_string();

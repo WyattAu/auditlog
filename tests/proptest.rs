@@ -40,14 +40,20 @@ fn entry_always_verifies_own_hash() {
 #[test]
 fn chained_entries_form_valid_chain() {
     proptest!(|(actions in prop::collection::vec("[a-z]{1,10}", 1..20))| {
-        let mut log = AuditLog::new();
-        for action in &actions {
-            log.append(
-                "test-user", action, "resource/1",
-                serde_json::json!({"seq": actions.len()}),
-            ).unwrap();
-        }
-        let result = log.verify_chain();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let result = rt.block_on(async {
+            let log = AuditLog::new();
+            for action in &actions {
+                log.append(
+                    "test-user", action, "resource/1",
+                    serde_json::json!({"seq": actions.len()}),
+                ).await.unwrap();
+            }
+            log.verify_chain().await.unwrap()
+        });
         prop_assert!(result.is_valid());
     });
 }

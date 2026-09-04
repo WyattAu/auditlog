@@ -98,7 +98,13 @@ mod tests {
     use super::*;
 
     fn test_entry(actor: &str, action: &str, resource: &str) -> AuditEntry {
-        AuditEntry::new(actor, action, resource, serde_json::json!({}), &"0".repeat(64))
+        AuditEntry::new(
+            actor,
+            action,
+            resource,
+            serde_json::json!({}),
+            &"0".repeat(64),
+        )
     }
 
     #[test]

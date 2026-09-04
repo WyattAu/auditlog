@@ -8,20 +8,24 @@
 //! # Quick Start
 //!
 //! ```rust
-//! use auditlog::AuditLog;
+//! # #[tokio::main]
+//! # async fn main() -> tamper_audit::Result<()> {
+//! use tamper_audit::AuditLog;
 //!
-//! let mut log = AuditLog::new();
+//! let log = AuditLog::new();
 //!
-//! log.append("alice", "create", "user/1", serde_json::json!({"name": "Alice"})).unwrap();
-//! log.append("bob", "update", "user/1", serde_json::json!({"name": "Alice Smith"})).unwrap();
+//! log.append("alice", "create", "user/1", serde_json::json!({"name": "Alice"})).await?;
+//! log.append("bob", "update", "user/1", serde_json::json!({"name": "Alice Smith"})).await?;
 //!
 //! // Verify chain integrity
-//! let result = log.verify_chain();
+//! let result = log.verify_chain().await?;
 //! assert!(result.is_valid());
 //!
 //! // Query by actor
-//! let alice_entries = log.query_by_actor("alice");
+//! let alice_entries = log.query_by_actor("alice").await?;
 //! assert_eq!(alice_entries.len(), 1);
+//! # Ok(())
+//! # }
 //! ```
 
 /// Audit log entry types.
@@ -32,11 +36,21 @@ pub mod error;
 pub mod log;
 /// Query types for audit logs.
 pub mod query;
+/// Storage backends.
+pub mod store;
 /// Chain verification.
 pub mod verify;
+
+#[cfg(feature = "persistence")]
+/// PostgreSQL storage backend.
+pub mod postgres;
 
 pub use entry::AuditEntry;
 pub use error::{AuditError, Result};
 pub use log::AuditLog;
 pub use query::AuditQuery;
+pub use store::{AuditStore, InMemoryStore};
 pub use verify::{AuditChain, VerificationResult};
+
+#[cfg(feature = "persistence")]
+pub use postgres::PostgresStore;

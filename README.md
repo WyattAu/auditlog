@@ -34,7 +34,7 @@ Entry 0 (genesis)          Entry 1                     Entry 2
 ## Quick Start
 
 ```rust
-use auditlog::AuditLog;
+use tamper_audit::AuditLog;
 
 let mut log = AuditLog::new();
 
@@ -57,7 +57,7 @@ assert_eq!(logins.len(), 1);
 ## Querying
 
 ```rust
-use auditlog::{AuditLog, AuditQuery};
+use tamper_audit::{AuditLog, AuditQuery};
 
 let mut log = AuditLog::new();
 log.append("alice", "create", "user/1", serde_json::json!({})).unwrap();
@@ -76,7 +76,7 @@ assert_eq!(results.len(), 1);
 ## Chain Verification
 
 ```rust
-use auditlog::AuditLog;
+use tamper_audit::AuditLog;
 
 let mut log = AuditLog::new();
 log.append("alice", "create", "doc/1", serde_json::json!({})).unwrap();
@@ -92,7 +92,7 @@ assert_eq!(result.total_entries, 3); // includes genesis
 If an attacker modifies any entry, chain verification fails:
 
 ```rust
-use auditlog::AuditLog;
+use tamper_audit::AuditLog;
 
 let mut log = AuditLog::new();
 log.append("alice", "create", "doc/1", serde_json::json!({})).unwrap();

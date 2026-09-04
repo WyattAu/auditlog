@@ -1,24 +1,20 @@
-use std::collections::HashMap;
-
 use crate::entry::AuditEntry;
 use crate::error::Result;
 use crate::query::AuditQuery;
+use crate::store::{AuditStore, InMemoryStore};
 use crate::verify::{AuditChain, VerificationResult};
 
-/// An in-memory tamper-evident audit log.
-pub struct AuditLog {
-    entries: Vec<AuditEntry>,
-    /// Index: actor -> entry indices.
-    actor_index: HashMap<String, Vec<usize>>,
-    /// Index: action -> entry indices.
-    action_index: HashMap<String, Vec<usize>>,
-    /// Index: resource -> entry indices.
-    resource_index: HashMap<String, Vec<usize>>,
+/// A tamper-evident audit log.
+///
+/// Generic over the storage backend `S`. The default is [`InMemoryStore`].
+pub struct AuditLog<S: AuditStore = InMemoryStore> {
+    store: S,
 }
 
-impl AuditLog {
-    /// Creates a new empty audit log with a genesis entry.
+impl AuditLog<InMemoryStore> {
+    /// Creates a new in-memory audit log with a genesis entry.
     pub fn new() -> Self {
+        let store = InMemoryStore::new();
         let genesis = AuditEntry::new(
             "system",
             "log.created",
@@ -26,119 +22,105 @@ impl AuditLog {
             serde_json::json!({}),
             &"0".repeat(64),
         );
+        store.push_sync(genesis);
+        Self { store }
+    }
+}
 
-        let mut log = Self {
-            entries: Vec::new(),
-            actor_index: HashMap::new(),
-            action_index: HashMap::new(),
-            resource_index: HashMap::new(),
-        };
-
-        log.add_entry(genesis);
-        log
+impl<S: AuditStore> AuditLog<S> {
+    /// Creates a new audit log with the given store backend.
+    ///
+    /// If the store is empty a genesis entry is inserted automatically.
+    pub async fn with_store(store: S) -> Result<Self> {
+        let log = Self { store };
+        if log.store.count().await? == 0 {
+            let genesis = AuditEntry::new(
+                "system",
+                "log.created",
+                "audit_log",
+                serde_json::json!({}),
+                &"0".repeat(64),
+            );
+            log.store.append(genesis).await?;
+        }
+        Ok(log)
     }
 
     /// Appends a new entry to the log.
-    pub fn append(
-        &mut self,
+    pub async fn append(
+        &self,
         actor: impl Into<String>,
         action: impl Into<String>,
         resource: impl Into<String>,
         details: serde_json::Value,
     ) -> Result<AuditEntry> {
         let previous_hash = self
-            .entries
-            .last()
-            .map(|e| e.hash.clone())
+            .store
+            .last_entry()
+            .await?
+            .map(|e| e.hash)
             .unwrap_or_else(|| "0".repeat(64));
 
         let entry = AuditEntry::new(actor, action, resource, details, &previous_hash);
         let entry_clone = entry.clone();
-        self.add_entry(entry);
+        self.store.append(entry).await?;
         Ok(entry_clone)
     }
 
-    /// Internal: adds an entry and updates indices.
-    fn add_entry(&mut self, entry: AuditEntry) {
-        let idx = self.entries.len();
-
-        self.actor_index
-            .entry(entry.actor.clone())
-            .or_default()
-            .push(idx);
-        self.action_index
-            .entry(entry.action.clone())
-            .or_default()
-            .push(idx);
-        self.resource_index
-            .entry(entry.resource.clone())
-            .or_default()
-            .push(idx);
-
-        self.entries.push(entry);
-    }
-
     /// Returns all entries matching a query.
-    pub fn query(&self, query: &AuditQuery) -> Vec<&AuditEntry> {
-        let mut results: Vec<&AuditEntry> = self
-            .entries
-            .iter()
-            .filter(|e| query.matches(e))
-            .collect();
-
-        if let Some(limit) = query.limit {
-            results.truncate(limit);
-        }
-
-        results
+    pub async fn query(&self, query: &AuditQuery) -> Result<Vec<AuditEntry>> {
+        self.store.query(query).await
     }
 
-    /// Queries entries by actor.
-    pub fn query_by_actor(&self, actor: &str) -> Vec<&AuditEntry> {
-        self.actor_index
-            .get(actor)
-            .map(|indices| indices.iter().map(|&i| &self.entries[i]).collect())
-            .unwrap_or_default()
+    /// Returns all entries whose actor matches the given value.
+    pub async fn query_by_actor(&self, actor: &str) -> Result<Vec<AuditEntry>> {
+        self.store
+            .query(&AuditQuery::new().by_actor(actor))
+            .await
     }
 
-    /// Queries entries by action.
-    pub fn query_by_action(&self, action: &str) -> Vec<&AuditEntry> {
-        self.action_index
-            .get(action)
-            .map(|indices| indices.iter().map(|&i| &self.entries[i]).collect())
-            .unwrap_or_default()
+    /// Returns all entries whose action matches the given value.
+    pub async fn query_by_action(&self, action: &str) -> Result<Vec<AuditEntry>> {
+        self.store
+            .query(&AuditQuery::new().by_action(action))
+            .await
     }
 
-    /// Queries entries by resource.
-    pub fn query_by_resource(&self, resource: &str) -> Vec<&AuditEntry> {
-        self.resource_index
-            .get(resource)
-            .map(|indices| indices.iter().map(|&i| &self.entries[i]).collect())
-            .unwrap_or_default()
+    /// Returns all entries whose resource matches the given value.
+    pub async fn query_by_resource(&self, resource: &str) -> Result<Vec<AuditEntry>> {
+        self.store
+            .query(&AuditQuery::new().by_resource(resource))
+            .await
     }
 
     /// Verifies the integrity of the entire audit chain.
-    pub fn verify_chain(&self) -> VerificationResult {
-        AuditChain::verify(&self.entries)
+    pub async fn verify_chain(&self) -> Result<VerificationResult> {
+        let entries = self.store.all_entries().await?;
+        Ok(AuditChain::verify(&entries))
     }
 
     /// Returns the total number of entries (including genesis).
-    pub fn len(&self) -> usize {
-        self.entries.len()
+    pub async fn len(&self) -> Result<usize> {
+        self.store.count().await
     }
 
-    /// Returns true if the log is empty.
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
+    /// Returns true if the log has no entries.
+    pub async fn is_empty(&self) -> Result<bool> {
+        Ok(self.store.count().await? == 0)
     }
 
-    /// Returns a reference to the last entry.
-    pub fn last_entry(&self) -> Option<&AuditEntry> {
-        self.entries.last()
+    /// Returns a clone of the last entry, if any.
+    pub async fn last_entry(&self) -> Result<Option<AuditEntry>> {
+        self.store.last_entry().await
+    }
+
+    /// Returns a reference to the underlying store.
+    pub fn store(&self) -> &S {
+        &self.store
     }
 }
 
-impl Default for AuditLog {
+impl Default for AuditLog<InMemoryStore> {
     fn default() -> Self {
         Self::new()
     }
@@ -148,89 +130,130 @@ impl Default for AuditLog {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_new_log_has_genesis() {
+    #[tokio::test]
+    async fn test_new_log_has_genesis() {
         let log = AuditLog::new();
-        assert_eq!(log.len(), 1);
-        assert_eq!(log.entries[0].action, "log.created");
+        assert_eq!(log.len().await.unwrap(), 1);
+        let entries = log.store.all_entries().await.unwrap();
+        assert_eq!(entries[0].action, "log.created");
     }
 
-    #[test]
-    fn test_append_creates_chained_entry() {
-        let mut log = AuditLog::new();
-        let entry = log.append("alice", "create", "user/1", serde_json::json!({"name": "Alice"})).unwrap();
+    #[tokio::test]
+    async fn test_append_creates_chained_entry() {
+        let log = AuditLog::new();
+        let genesis = log.store.all_entries().await.unwrap();
+        let entry = log
+            .append(
+                "alice",
+                "create",
+                "user/1",
+                serde_json::json!({"name": "Alice"}),
+            )
+            .await
+            .unwrap();
 
-        assert_eq!(log.len(), 2);
-        assert_eq!(entry.previous_hash, log.entries[0].hash);
+        assert_eq!(log.len().await.unwrap(), 2);
+        assert_eq!(entry.previous_hash, genesis[0].hash);
         assert!(entry.verify_hash());
     }
 
-    #[test]
-    fn test_verify_chain_valid() {
-        let mut log = AuditLog::new();
-        log.append("alice", "create", "user/1", serde_json::json!({})).unwrap();
-        log.append("bob", "update", "user/1", serde_json::json!({})).unwrap();
-        log.append("alice", "delete", "user/1", serde_json::json!({})).unwrap();
+    #[tokio::test]
+    async fn test_verify_chain_valid() {
+        let log = AuditLog::new();
+        log.append("alice", "create", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("bob", "update", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("alice", "delete", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
 
-        let result = log.verify_chain();
+        let result = log.verify_chain().await.unwrap();
         assert!(result.is_valid());
         assert_eq!(result.total_entries, 4);
     }
 
-    #[test]
-    fn test_query_by_actor() {
-        let mut log = AuditLog::new();
-        log.append("alice", "create", "user/1", serde_json::json!({})).unwrap();
-        log.append("bob", "create", "user/2", serde_json::json!({})).unwrap();
-        log.append("alice", "update", "user/1", serde_json::json!({})).unwrap();
+    #[tokio::test]
+    async fn test_query_by_actor() {
+        let log = AuditLog::new();
+        log.append("alice", "create", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("bob", "create", "user/2", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("alice", "update", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
 
-        let alice_entries = log.query_by_actor("alice");
+        let alice_entries = log.query_by_actor("alice").await.unwrap();
         assert_eq!(alice_entries.len(), 2);
 
-        let bob_entries = log.query_by_actor("bob");
+        let bob_entries = log.query_by_actor("bob").await.unwrap();
         assert_eq!(bob_entries.len(), 1);
     }
 
-    #[test]
-    fn test_query_by_action() {
-        let mut log = AuditLog::new();
-        log.append("alice", "create", "user/1", serde_json::json!({})).unwrap();
-        log.append("bob", "update", "user/1", serde_json::json!({})).unwrap();
-        log.append("alice", "create", "user/2", serde_json::json!({})).unwrap();
+    #[tokio::test]
+    async fn test_query_by_action() {
+        let log = AuditLog::new();
+        log.append("alice", "create", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("bob", "update", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("alice", "create", "user/2", serde_json::json!({}))
+            .await
+            .unwrap();
 
-        let creates = log.query_by_action("create");
+        let creates = log.query_by_action("create").await.unwrap();
         assert_eq!(creates.len(), 2);
     }
 
-    #[test]
-    fn test_query_by_resource() {
-        let mut log = AuditLog::new();
-        log.append("alice", "create", "user/1", serde_json::json!({})).unwrap();
-        log.append("bob", "update", "user/1", serde_json::json!({})).unwrap();
-        log.append("alice", "create", "user/2", serde_json::json!({})).unwrap();
+    #[tokio::test]
+    async fn test_query_by_resource() {
+        let log = AuditLog::new();
+        log.append("alice", "create", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("bob", "update", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("alice", "create", "user/2", serde_json::json!({}))
+            .await
+            .unwrap();
 
-        let user1 = log.query_by_resource("user/1");
+        let user1 = log.query_by_resource("user/1").await.unwrap();
         assert_eq!(user1.len(), 2);
     }
 
-    #[test]
-    fn test_structured_query() {
-        let mut log = AuditLog::new();
-        log.append("alice", "create", "user/1", serde_json::json!({})).unwrap();
-        log.append("alice", "update", "user/1", serde_json::json!({})).unwrap();
-        log.append("bob", "create", "user/2", serde_json::json!({})).unwrap();
+    #[tokio::test]
+    async fn test_structured_query() {
+        let log = AuditLog::new();
+        log.append("alice", "create", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("alice", "update", "user/1", serde_json::json!({}))
+            .await
+            .unwrap();
+        log.append("bob", "create", "user/2", serde_json::json!({}))
+            .await
+            .unwrap();
 
         let query = AuditQuery::new().by_actor("alice").by_action("create");
-        let results = log.query(&query);
+        let results = log.query(&query).await.unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].actor, "alice");
         assert_eq!(results[0].action, "create");
     }
 
-    #[test]
-    fn test_genesis_entry_previous_hash() {
+    #[tokio::test]
+    async fn test_genesis_entry_previous_hash() {
         let log = AuditLog::new();
-        let genesis = &log.entries[0];
+        let entries = log.store.all_entries().await.unwrap();
+        let genesis = &entries[0];
         assert_eq!(genesis.previous_hash, "0".repeat(64));
     }
 }
