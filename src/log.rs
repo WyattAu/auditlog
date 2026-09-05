@@ -74,16 +74,12 @@ impl<S: AuditStore> AuditLog<S> {
 
     /// Returns all entries whose actor matches the given value.
     pub async fn query_by_actor(&self, actor: &str) -> Result<Vec<AuditEntry>> {
-        self.store
-            .query(&AuditQuery::new().by_actor(actor))
-            .await
+        self.store.query(&AuditQuery::new().by_actor(actor)).await
     }
 
     /// Returns all entries whose action matches the given value.
     pub async fn query_by_action(&self, action: &str) -> Result<Vec<AuditEntry>> {
-        self.store
-            .query(&AuditQuery::new().by_action(action))
-            .await
+        self.store.query(&AuditQuery::new().by_action(action)).await
     }
 
     /// Returns all entries whose resource matches the given value.
