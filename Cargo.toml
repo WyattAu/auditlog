@@ -35,3 +35,7 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "test-ut
 default = ["in-memory"]
 in-memory = []
 persistence = ["dep:sqlx"]
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
