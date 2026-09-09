@@ -1,3 +1,6 @@
+// Benches run fixed inputs; unwraps keep failures loud.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use criterion::{Criterion, criterion_group, criterion_main};
 use tamper_audit::{AuditChain, AuditEntry, AuditLog, AuditQuery};
 
@@ -44,7 +47,7 @@ fn bench_audit_entry_verify_hash(c: &mut Criterion) {
 
 fn bench_audit_log_new(c: &mut Criterion) {
     c.bench_function("audit_log_new", |b| {
-        b.iter(|| AuditLog::new());
+        b.iter(AuditLog::new);
     });
 }
 

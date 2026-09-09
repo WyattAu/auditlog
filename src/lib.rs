@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))] // tests assert invariants directly
 //! Tamper-evident audit logging for Rust.
 //!
 //! `auditlog` provides an immutable, SHA-256 chained audit log with
