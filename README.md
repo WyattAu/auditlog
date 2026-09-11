@@ -1,5 +1,9 @@
 # tamper-audit
 
+[![docs.rs](https://docs.rs/tamper-audit/badge.svg)](https://docs.rs/tamper-audit)
+[![crates.io](https://img.shields.io/crates/v/tamper-audit.svg)](https://crates.io/crates/tamper-audit)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
+
 Tamper-evident audit logging for Rust — SHA-256 chain, immutable entries, and queryable audit trail.
 
 ## Features
