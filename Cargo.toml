@@ -18,18 +18,17 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
-
-# wasm32-unknown-unknown: uuid's v4 randomness needs a named source there.
-# rng-getrandom works natively on wasm32-unknown-unknown (no js bindings
-# required), keeping the crate usable in browser-hosted audit trails.
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-uuid = { version = "1", features = ["v4", "serde", "rng-getrandom"] }
-# uuid's rand backend resolves to getrandom 0.4 on wasm, and getrandom 0.4
-# gates wasm32-unknown-unknown behind wasm_js (crypto.getRandomValues).
-getrandom = { version = "0.4", features = ["wasm_js"] }
 thiserror = "2"
 async-trait = "0.1"
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json"], optional = true }
+
+# wasm32-unknown-unknown: uuid's v4 randomness needs a named source there, and
+# getrandom 0.4 (uuid's rand backend) gates the target behind its wasm_js
+# feature (crypto.getRandomValues). Both are target-scoped so native builds
+# never see them - keeping the crate usable in browser-hosted audit trails.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uuid = { version = "1", features = ["v4", "serde", "rng-getrandom"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 
 [[bench]]
 name = "auditlog_bench"
