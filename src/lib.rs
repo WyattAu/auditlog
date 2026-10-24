@@ -33,6 +33,8 @@
 pub mod entry;
 /// Error types.
 pub mod error;
+/// File-backed storage (JSONL).
+pub mod file;
 /// Audit log implementation.
 pub mod log;
 /// Query types for audit logs.
@@ -48,6 +50,7 @@ pub mod postgres;
 
 pub use entry::AuditEntry;
 pub use error::{AuditError, Result};
+pub use file::FileStore;
 pub use log::AuditLog;
 pub use query::AuditQuery;
 pub use store::{AuditStore, InMemoryStore};
