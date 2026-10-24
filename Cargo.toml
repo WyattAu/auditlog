@@ -1,10 +1,10 @@
 [package]
 name = "tamper-audit"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 rust-version = "1.85"
 authors = ["WyattAu"]
-description = "Tamper-evident audit logging for Rust — SHA-256 chain, immutable entries, and queryable audit trail"
+description = "Tamper-evident audit logging for Rust: SHA-256 chain, immutable entries, and queryable audit trail"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/WyattAu/auditlog"
 keywords = ["audit", "logging", "tamper", "sha256", "security"]
