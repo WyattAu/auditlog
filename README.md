@@ -4,14 +4,14 @@
 [![crates.io](https://img.shields.io/crates/v/tamper-audit.svg)](https://crates.io/crates/tamper-audit)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-Tamper-evident audit logging for Rust — SHA-256 chain, immutable entries, and queryable audit trail.
+Tamper-evident audit logging for Rust; SHA-256 chain, immutable entries, and queryable audit trail.
 
 ## Features
 
-- **SHA-256 chain** — Each entry's hash links to the previous, creating a tamper-evident chain
-- **Immutable entries** — Once created, entries cannot be modified without detection
-- **Queryable** — Index-based lookups by actor, action, and resource
-- **Chain verification** — Walk the entire chain to validate integrity
+- **SHA-256 chain**; Each entry's hash links to the previous, creating a tamper-evident chain
+- **Immutable entries**; Once created, entries cannot be modified without detection
+- **Queryable**; Index-based lookups by actor, action, and resource
+- **Chain verification**; Walk the entire chain to validate integrity
 - **Zero dependencies** beyond `sha2`, `serde`, `chrono`, and `uuid`
 
 ## How It Works

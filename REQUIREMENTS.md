@@ -1,9 +1,9 @@
-# Requirements — auditlog
+# Requirements: auditlog
 
 Numbered, testable requirements. Every requirement maps to at least one named
 test or doc-comment contract; security-relevant items cite threat-model rows.
 
-Scope: Tamper-evident audit log (`tamper-audit`) — hash-chained, append-only event records
+Scope: Tamper-evident audit log (`tamper-audit`); hash-chained, append-only event records
 
 ## Functional
 

@@ -6,7 +6,7 @@ All notable changes are documented here.
 
 ### Added
 
-- `FileStore`: a JSONL file backend for the audit store — the desktop's
+- `FileStore`: a JSONL file backend for the audit store; the desktop's
   durable trail. One serialized entry per line; appends are O(1) and
   flushed per write; a corrupt line is refused at log open, naming the
   line. `AuditLog::with_store(FileStore::new(path))` continues an
@@ -25,7 +25,7 @@ All notable changes are documented here.
 
 
 All notable changes to this project are documented here. Format: [Keep a
-Changelog](https://keepachangelog.com/) — versions follow [semver](https://semver.org).
+Changelog](https://keepachangelog.com/); versions follow [semver](https://semver.org).
 
 ## [0.1.0] - 2026-06-07
 

@@ -1,11 +1,11 @@
-# Threat Model — auditlog
+# Threat Model: auditlog
 
 Reference: STRIDE. Scope: the crate's public API surface. Trust boundary:
 (1) bytes/inputs entering public constructors and parsers, (2) concurrent
-callers sharing interior state. auditlog is an in-process library — it opens
+callers sharing interior state. auditlog is an in-process library; it opens
 no sockets and inherits the embedding process's trust domain.
 
-Purpose: Tamper-evident audit log (`tamper-audit`) — hash-chained, append-only event records
+Purpose: Tamper-evident audit log (`tamper-audit`); hash-chained, append-only event records
 
 ## Assets
 
@@ -21,7 +21,7 @@ Purpose: Tamper-evident audit log (`tamper-audit`) — hash-chained, append-only
 | T1 | Silent record tampering | Tampering | `stored chain` | SHA-256 hash chaining; `verify` walks the full chain (mutation detectable unless hashes recomputed through head) | documented |
 | T2 | Chain truncation (delete recent history) | Repudiation | `storage` | truncation is detectable by verifier holding the earlier head hash | documented |
 | T3 | Lock poisoning stalls audit writes | DoS | `in-memory log` | poison-tolerant lock acquisition (`.unwrap_or_else(into_inner)` semantics) | documented |
-| T4 | Deny: attacker rewrites entire chain including head | Tampering | `storage host` | **Not mitigated** — storage-level compromise requires external anchoring (out of scope, documented) | documented |
+| T4 | Deny: attacker rewrites entire chain including head | Tampering | `storage host` | **Not mitigated**; storage-level compromise requires external anchoring (out of scope, documented) | documented |
 
 ## Repudiation
 
