@@ -2,6 +2,9 @@
 //! the chain across a reopen, and query. Unwrap/expect are the test signal
 //! here; a poisoned lock in a single-threaded-per-file backend is the bug.
 
+// Tests assert invariants directly; unwraps keep failures loud.
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use std::path::PathBuf;
 
 use tamper_audit::{AuditLog, AuditQuery, FileStore};
