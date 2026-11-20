@@ -9,6 +9,7 @@ WyattAu pattern canon (`WyattAu/pattern-standards`). Validation:
 |---|---|---|
 | P83 | adopted | src/entry.rs:58 (entry hash covers id, timestamp, actor, action, resource, details, previous_hash) + src/log.rs:50 (append links each entry to the prior hash) + src/verify.rs:31 (full-chain walk checks linkage and the genesis zero hash) + src/postgres.rs:34 (chained schema, previous_hash NOT NULL) |
 | T21 | partial | src/store.rs:11 (AuditStore is append-only: no update or delete methods) + src/entry.rs:6 (entries immutable); the log preserves history but nothing replays events into application state |
+| P4 | n/a | canon baseline line names this repo; code shows no implementation of P4: actor, action, resource, and details are plain strings (src/entry.rs:58) with no Sensitive wrapper or redaction anywhere in src/ |
 
 Scope note: this crate is a tamper-evident event log with in-memory,
 file, and Postgres backends; patterns outside the two rows above do
